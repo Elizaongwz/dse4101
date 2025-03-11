@@ -27,6 +27,9 @@ df_avgsocial = select(df, -facebook:-reddit, -effavg)
 ## averaging all
 df_avg = select(df,-facebook:-reddit, -effext,-effint)
 
+# treatment for heterogeneity
+df_het = df %>% mutate(hetero = ifelse(echo==1, 0, 1))
+
 save.image("clean.RData")
 
 
