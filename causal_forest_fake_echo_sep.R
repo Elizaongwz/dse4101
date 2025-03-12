@@ -89,5 +89,32 @@ ggplot(cate_knowledge, aes(x = know_bin, y = mean_CATE)) +
        y = "Average CATE") +
   theme_minimal()
 
+# Bootstrap SE
+
+n_bootstrap <- 500  
+
+# Store bootstrap estimates
+boot_cate <- matrix(NA, nrow = n_bootstrap, ncol = length(df1$echofake))
+boot_ate = rep(NA,n_bootstrap)
+for (i in 1:n_bootstrap) {
+  # Resample data with replacement
+  boot_indices <- sample(1:nrow(df1), replace = TRUE)
+  df_boot <- df1[boot_indices, ]
+  # Train causal forest on resampled data
+  cf_boot <- causal_forest(X = X, 
+                           W = df_boot$echofake, 
+                           Y = df_boot$totalfakeavg,
+                           W.hat = W.hat)
+  
+  # Store CATE estimates for this bootstrap sample
+  boot_cate[i, ] <- predict(cf_boot)$predictions
+  boot_ate[i]=mean(predict(cf_boot, estimate.variance=TRUE)$predictions)
+}
+
+# Compute bootstrap standard error
+btse_echofake_sep = sqrt(sum((boot_ate - mean(boot_ate))^2)/(n_bootstrap-1))
+p_value_echofake_sep <- mean(abs(boot_ate) >= abs(mean(boot_ate)))
+print(p_value_echofake_sep)
+
 save(ks_model, file="ks.RData")
 save.image("causal_forest_fake_echo_separate.RData")

@@ -8,17 +8,18 @@ library(ggplot2)
 
 load("clean.RData")
 set.seed(123)
+#load("causal_forest_fake_echo_avg.RData")
 # Klein and Spady will be used to estimate propensity scores
 # Fake news accuracy
 ### echo chamber as treatment
-## external, internal efficacy and individual time spent on social media apps separated
+## external, internal efficacy and individual time spent on social media apps will be averaged
 
 X = select(df_avg,polint2, income:effavg, infopros, infoproh)
-ks_model = npindex(df_avg$echofake ~ polint2+income+newsattention+age+edu+male+white+vote16+republican+socialavg+knowscale+effavg+infopros+infoproh, data=df_avg, method="kleinspady")
+ks_model = npindex(df_avg$hetero ~ polint2+income+newsattention+age+edu+male+white+vote16+republican+socialavg+knowscale+effavg+infopros+infoproh, data=df_avg, method="kleinspady")
 W.hat = fitted(ks_model)
 
 
-cf_fake_echo_avg = causal_forest(X=X,Y=df_avg$totalfakeavg,W=df_avg$echofake,W.hat=W.hat, seed=1234)
+cf_fake_echo_avg = causal_forest(X=X,Y=df_avg$totalfakeavg,W=df_avg$hetero,W.hat=W.hat, seed=1234)
 tau.hat_fake_echo_avg = predict(cf_fake_echo_avg, estimate.variance=TRUE)$predictions
 sqrt_fake_echo_avg =  predict(cf_fake_echo_avg, estimate.variance=TRUE)$variance.estimates
 tree_fake_echo_avg <- get_tree(cf_fake_echo_avg, 5) # get a representative tree out of the forest
@@ -83,6 +84,29 @@ ggplot(cate_social, aes(x = social_bin, y = mean_CATE)) +
 # magnifying results that go against hypothesis
 summary(lm(formula = infoproh ~ socialavg, data = df_avg))
 # it seems like using more social media increases heuristic information processing
+# Bootstrap SE
 
+n_bootstrap <- 500  
+
+# Store bootstrap estimates
+boot_cate <- matrix(NA, nrow = n_bootstrap, ncol = length(df_avg$echofake))
+boot_ate = rep(NA,n_bootstrap)
+for (i in 1:n_bootstrap) {
+  # Resample data with replacement
+  boot_indices <- sample(1:nrow(df1), replace = TRUE)
+  df_boot <- df1[boot_indices, ]
+  # Train causal forest on resampled data
+  cf_boot <- causal_forest(X = X, 
+                           W = df_boot$echofake, 
+                           Y = df_boot$totalfakeavg,
+                           W.hat = W.hat)
+  
+  # Store CATE estimates for this bootstrap sample
+  boot_cate[i, ] <- predict(cf_boot)$predictions
+  boot_ate[i]=mean(predict(cf_boot, estimate.variance=TRUE)$predictions)
+}
+
+# Compute bootstrap standard error
+btse = sqrt(sum((boot_ate - mean(boot_ate))^2)/(n_bootstrap-1))
 
 save.image("causal_forest_fake_echo_avg.RData")
