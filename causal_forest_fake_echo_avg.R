@@ -15,11 +15,11 @@ set.seed(123)
 ## external, internal efficacy and individual time spent on social media apps will be averaged
 
 X = select(df_avg,polint2, income:effavg, infopros, infoproh)
-ks_model = npindex(df_avg$hetero ~ polint2+income+newsattention+age+edu+male+white+vote16+republican+socialavg+knowscale+effavg+infopros+infoproh, data=df_avg, method="kleinspady")
+ks_model = npindex(df_avg$echofake ~ polint2+income+newsattention+age+edu+male+white+vote16+republican+socialavg+knowscale+effavg+infopros+infoproh, data=df_avg, method="kleinspady")
 W.hat = fitted(ks_model)
 
 
-cf_fake_echo_avg = causal_forest(X=X,Y=df_avg$totalfakeavg,W=df_avg$hetero,W.hat=W.hat, seed=1234)
+cf_fake_echo_avg = causal_forest(X=X,Y=df_avg$totalfakeavg,W=df_avg$echofake,W.hat=W.hat, seed=1234)
 tau.hat_fake_echo_avg = predict(cf_fake_echo_avg, estimate.variance=TRUE)$predictions
 sqrt_fake_echo_avg =  predict(cf_fake_echo_avg, estimate.variance=TRUE)$variance.estimates
 tree_fake_echo_avg <- get_tree(cf_fake_echo_avg, 5) # get a representative tree out of the forest
@@ -108,5 +108,8 @@ for (i in 1:n_bootstrap) {
 
 # Compute bootstrap standard error
 btse = sqrt(sum((boot_ate - mean(boot_ate))^2)/(n_bootstrap-1))
+btse_fakeecho_avg = sqrt(sum((boot_ate - mean(boot_ate))^2)/(n_bootstrap-1))
+p_value_fakeechoavg <- mean(abs(boot_ate) >= abs(mean(boot_ate)))
+print(p_value_fakeechoavg) 
 
 save.image("causal_forest_fake_echo_avg.RData")

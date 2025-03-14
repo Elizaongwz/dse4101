@@ -18,15 +18,15 @@ X = select(df_real,polint2, income:effint, infopros, infoproh,-socialavg,-effavg
 ks_model_real = npindex(df_real$prime ~ polint2+income+newsattention+age+edu+male+white+vote16+republican+pin+facebook+insta+twitter+snap+reddit+knowscale+effext+effint+infopros+infoproh, data=df_real, method="kleinspady")
 W.hat = fitted(ks_model_real)
 
-cf_real_prime_avg = causal_forest(X=X,Y=df_real$totalrealavg,W=df_real$prime,W.hat=W.hat, seed=1234)
-tau.hat_real_prime_avg = predict(cf_real_prime_avg, estimate.variance=TRUE)$predictions
-sqrt_real_prime_avg =  predict(cf_real_prime_avg, estimate.variance=TRUE)$variance.estimates
-tree_real_prime_avg <- get_tree(cf_real_prime_avg, 5) # get a representative tree out of the forest
+cf_real_prime_sep = causal_forest(X=X,Y=df_real$totalrealavg,W=df_real$prime,W.hat=W.hat, seed=1234)
+tau.hat_real_prime_sep = predict(cf_real_prime_sep, estimate.variance=TRUE)$predictions
+sqrt_real_prime_sep =  predict(cf_real_prime_sep, estimate.variance=TRUE)$variance.estimates
+tree_real_prime_sep <- get_tree(cf_real_prime_sep, 5) # get a representative tree out of the forest
 plot(tree_real_prime_avg)
-ATE = mean(tau.hat_real_prime_avg)
-importance = data.frame(CATE=tau.hat_real_prime_avg,X)
-rfcate_real_prime_avg=randomForest(CATE~., data=importance)
-importance(rfcate_real_prime_avg)
+ATE = mean(tau.hat_real_prime_sep)
+importance = data.frame(CATE=tau.hat_real_prime_sep,X)
+rfcate_real_prime_sep=randomForest(CATE~., data=importance)
+importance(rfcate_real_prime_sep)
 
 # Bootstrap SE
 
@@ -54,5 +54,49 @@ for (i in 1:n_bootstrap) {
 btse = sqrt(sum((boot_ate - mean(boot_ate))^2)/(n_bootstrap-1))
 p_value_prime_real_sep <- mean(abs(boot_ate) >= abs(mean(boot_ate)))
 print(p_value_prime_real_sep)
+
+# age
+cate_age <- importance %>%
+  group_by(age_bin = cut(df_real$age, breaks = 5)) %>%
+  summarise(mean_CATE = mean(CATE, na.rm = TRUE))
+
+ggplot(cate_age, aes(x = age_bin, y = mean_CATE)) +
+  geom_point(size = 4, color = "blue") +
+  geom_line(group = 1, color = "red") +
+  labs(title = "Average CATE by Age", x = "Age", y = "Average CATE") +
+  theme_minimal()
+
+# average snapchat use
+cate_snap <- importance %>%
+  group_by(snap_bin = cut(df_real$snap, breaks = 10)) %>%  
+  summarise(mean_CATE = mean(CATE, na.rm = TRUE))
+
+ggplot(cate_snap, aes(x = snap_bin, y = mean_CATE)) +
+  geom_point(size = 4, color = "blue") +
+  geom_line(group = 1, color = "red") +
+  labs(title = "Average CATE by Average Snapchat Use", x = "Average Snapchat Use", y = "Average CATE") +
+  theme_minimal()
+
+# average insta use
+cate_insta <- importance %>%
+  group_by(insta_bin = cut(df_real$insta, breaks = 10)) %>%  
+  summarise(mean_CATE = mean(CATE, na.rm = TRUE))
+
+ggplot(cate_insta, aes(x = insta_bin, y = mean_CATE)) +
+  geom_point(size = 4, color = "blue") +
+  geom_line(group = 1, color = "red") +
+  labs(title = "Average CATE by Average Instagram Use", x = "Average Instagram Use", y = "Average CATE") +
+  theme_minimal()
+
+# average pinterest use
+cate_pin <- importance %>%
+  group_by(pin_bin = cut(df_real$pin, breaks = 10)) %>%  
+  summarise(mean_CATE = mean(CATE, na.rm = TRUE))
+
+ggplot(cate_pin, aes(x = pin_bin, y = mean_CATE)) +
+  geom_point(size = 4, color = "blue") +
+  geom_line(group = 1, color = "red") +
+  labs(title = "Average CATE by Average Pinterest Use", x = "Average Pinterest Use", y = "Average CATE") +
+  theme_minimal()
 
 save.image("causal_forest_real_prime_sep.RData")

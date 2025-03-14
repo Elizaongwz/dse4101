@@ -14,11 +14,11 @@ set.seed(123)
 ### echo chamber as treatment
 ## external, internal efficacy and individual time spent on social media apps will be averaged
 
-X = select(df_real,polint2, income:effint, infopros, infoproh)
-ks_model_real = npindex(df_real$fakereal ~ polint2+income+newsattention+age+edu+male+white+vote16+republican+socialavg+knowscale+effavg+infopros+infoproh, data=df_real, method="kleinspady")
-W.hat = fitted(ks_model)
+X = select(df_real,polint2, income:republican, -facebook:-reddit, infopros, infoproh, -effext,-effint,socialavg,effavg)
+ks_model_real = npindex(df_real$echoreal ~ polint2+income+newsattention+age+edu+male+white+vote16+republican+socialavg+knowscale+effavg+infopros+infoproh, data=df_real, method="kleinspady")
+W.hat = fitted(ks_model_real)
 
-cf_real_echo_avg = causal_forest(X=X,Y=df_real$totalrealavg,W=df_real$realecho,W.hat=W.hat, seed=1234)
+cf_real_echo_avg = causal_forest(X=X,Y=df_real$totalrealavg,W=df_real$echoreal,W.hat=W.hat, seed=1234)
 tau.hat_real_echo_avg = predict(cf_real_echo_avg, estimate.variance=TRUE)$predictions
 sqrt_real_echo_avg =  predict(cf_real_echo_avg, estimate.variance=TRUE)$variance.estimates
 tree_real_echo_avg <- get_tree(cf_real_echo_avg, 5) # get a representative tree out of the forest
@@ -52,5 +52,29 @@ for (i in 1:n_bootstrap) {
 
 # Compute bootstrap standard error
 btse = sqrt(sum((boot_ate - mean(boot_ate))^2)/(n_bootstrap-1))
+p_value_echo_real_avg <- mean(abs(boot_ate) >= abs(mean(boot_ate)))
+print(p_value_echo_real_avg)
+
+# heuristic information processing
+cate_infoproh <- importance %>%
+  group_by(infoproh_bin = cut(df_real$infoproh, breaks = 5)) %>%
+  summarise(mean_CATE = mean(CATE, na.rm = TRUE))
+
+ggplot(cate_infoproh, aes(x = infoproh_bin, y = mean_CATE)) +
+  geom_point(size = 4, color = "blue") +
+  geom_line(group = 1, color = "red") +
+  labs(title = "Average CATE by Heurisic Information Processing", x = "Heuristic Information Processing", y = "Average CATE") +
+  theme_minimal()
+
+# average social media use
+cate_social <- importance %>%
+  group_by(social_bin = cut(df_real$socialavg, breaks = 10)) %>%  
+  summarise(mean_CATE = mean(CATE, na.rm = TRUE))
+
+ggplot(cate_social, aes(x = social_bin, y = mean_CATE)) +
+  geom_point(size = 4, color = "blue") +
+  geom_line(group = 1, color = "red") +
+  labs(title = "Average CATE by Average Social Media Use", x = "Average Social Media Use", y = "Average CATE") +
+  theme_minimal()
 
 save.image("causal_forest_real_echo_avg.RData")
