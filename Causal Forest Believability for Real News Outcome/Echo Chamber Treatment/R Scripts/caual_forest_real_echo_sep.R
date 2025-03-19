@@ -6,7 +6,7 @@ library(dplyr)
 library(np)
 library(ggplot2)
 
-load("clean.RData")
+load("~/Downloads/dse4101/Datasets/Cleaning Scripts and R Data/clean.RData")
 set.seed(123)
 #load("causal_forest_real_echo_avg.RData")
 # Klein and Spady will be used to estimate propensity scores
@@ -14,19 +14,18 @@ set.seed(123)
 ### echo chamber as treatment
 ## external, internal efficacy and individual time spent on social media apps will be averaged
 
-X = select(df_real,polint2, income:effint, -effavg, -socialavg, infopros, infoproh)
+X = dplyr::select(df_real,polint2, income:effint, -effavg, -socialavg, infopros, infoproh)
 ks_model_real = npindex(df_real$echoreal ~ polint2+income+newsattention+age+edu+male+white+vote16+republican+pin+facebook+insta+twitter+snap+reddit+knowscale+effext+effint+infopros+infoproh, data=df_real, method="kleinspady")
 W.hat = fitted(ks_model_real)
 
-cf_real_echo_avg = causal_forest(X=X,Y=df_real$totalrealavg,W=df_real$echoreal,W.hat=W.hat, seed=1234)
-tau.hat_real_echo_avg = predict(cf_real_echo_avg, estimate.variance=TRUE)$predictions
-sqrt_real_echo_avg =  predict(cf_real_echo_avg, estimate.variance=TRUE)$variance.estimates
-tree_real_echo_avg <- get_tree(cf_real_echo_avg, 5) # get a representative tree out of the forest
-plot(tree_real_echo_avg)
-ATE = mean(tau.hat_real_echo_avg)
-importance = data.frame(CATE=tau.hat_real_echo_avg,X)
-rfcate_real_echo_avg=randomForest(CATE~., data=importance)
-importance(rfcate_real_echo_avg)
+cf_real_echo_sep = causal_forest(X=X,Y=df_real$totalrealavg,W=df_real$echoreal,W.hat=W.hat, seed=1234)
+tau.hat_real_echo_sep = predict(cf_real_echo_sep, estimate.variance=TRUE)$predictions
+sqrt_real_echo_sep =  predict(cf_real_echo_sep, estimate.variance=TRUE)$variance.estimates
+tree_real_echo_sep <- get_tree(cf_real_echo_sep, 5) # get a representative tree out of the forest
+ATE = mean(tau.hat_real_echo_sep)
+importance = data.frame(CATE=tau.hat_real_echo_sep,X)
+rfcate_real_echo_sep=randomForest(CATE~., data=importance)
+importance(rfcate_real_echo_sep)
 
 # Bootstrap SE
 

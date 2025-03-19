@@ -6,7 +6,7 @@ library(dplyr)
 library(np)
 library(ggplot2)
 
-load("clean.RData")
+load("~/Downloads/dse4101/Datasets/Cleaning Scripts and R Data/clean.RData")
 set.seed(123)
 #load("causal_forest_real_prime_sep.RData")
 # Klein and Spady will be used to estimate propensity scores
@@ -14,7 +14,7 @@ set.seed(123)
 ### prime chamber as treatment
 ## external, internal efficacy and individual time spent on social media apps will be averaged
 
-X = select(df_real,polint2, income:effint, infopros, infoproh,-socialavg,-effavg)
+X = dplyr::select(df_real,polint2, income:effint, infopros, infoproh,-socialavg,-effavg)
 ks_model_real = npindex(df_real$prime ~ polint2+income+newsattention+age+edu+male+white+vote16+republican+pin+facebook+insta+twitter+snap+reddit+knowscale+effext+effint+infopros+infoproh, data=df_real, method="kleinspady")
 W.hat = fitted(ks_model_real)
 
@@ -22,7 +22,6 @@ cf_real_prime_sep = causal_forest(X=X,Y=df_real$totalrealavg,W=df_real$prime,W.h
 tau.hat_real_prime_sep = predict(cf_real_prime_sep, estimate.variance=TRUE)$predictions
 sqrt_real_prime_sep =  predict(cf_real_prime_sep, estimate.variance=TRUE)$variance.estimates
 tree_real_prime_sep <- get_tree(cf_real_prime_sep, 5) # get a representative tree out of the forest
-plot(tree_real_prime_avg)
 ATE = mean(tau.hat_real_prime_sep)
 importance = data.frame(CATE=tau.hat_real_prime_sep,X)
 rfcate_real_prime_sep=randomForest(CATE~., data=importance)
