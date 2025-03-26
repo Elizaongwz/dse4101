@@ -8,8 +8,6 @@ library(ggplot2)
 
 load("~/Downloads/dse4101/Datasets/Cleaning Scripts and R Data/clean.RData")
 set.seed(123)
-#load("causal_forest_real_echo_avg.RData")
-# Klein and Spady will be used to estimate propensity scores
 # real news accuracy
 ### echo chamber as treatment
 ## external, internal efficacy and individual time spent on social media apps will be averaged
