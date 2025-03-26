@@ -6,7 +6,7 @@ library(dplyr)
 library(np)
 library(ggplot2)
 
-load("~/Downloads/dse4101/Datasets/Cleaning Scripts and R Data/clean.RData")
+load("Datasets/Cleaning Scripts and R Data/clean.RData")
 set.seed(123)
 #load("causal_forest_real_prime_sep.RData")
 # Klein and Spady will be used to estimate propensity scores
@@ -14,8 +14,8 @@ set.seed(123)
 ### prime chamber as treatment
 ## external, internal efficacy and individual time spent on social media apps will be averaged
 
-X = dplyr::select(df_real,polint2, income:effint, infopros, infoproh,-socialavg,-effavg)
-ks_model_real = npindex(df_real$prime ~ polint2+income+newsattention+age+edu+male+white+vote16+republican+pin+facebook+insta+twitter+snap+reddit+knowscale+effext+effint+infopros+infoproh, data=df_real, method="kleinspady")
+X = dplyr::select(df2_real,polint2, income:effint, infopros, infoproh,-socialavg,-effavg)
+ks_model_real = npindex(df2_real$prime ~ polint2+income+newsattention+age+edu+male+white+vote16+republican+pin+facebook+insta+twitter+snap+reddit+knowscale+effext+effint+infopros+infoproh, data=df2_real, method="kleinspady")
 W.hat = fitted(ks_model_real)
 
 cf_real_prime_sep = causal_forest(X=X,Y=df_real$totalrealavg,W=df_real$prime,W.hat=W.hat, seed=1234)
@@ -98,4 +98,4 @@ ggplot(cate_pin, aes(x = pin_bin, y = mean_CATE)) +
   labs(title = "Average CATE by Average Pinterest Use", x = "Average Pinterest Use", y = "Average CATE") +
   theme_minimal()
 
-save.image("causal_forest_real_prime_sep.RData")
+save.image("Causal Forest Believability for Real News Outcome/Prime Treatment/R Data/causal_forest_real_prime_sep.RData")

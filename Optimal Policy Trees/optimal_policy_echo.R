@@ -13,22 +13,11 @@ load("~/Downloads/dse4101/Causal Forest Believability for Fake News Outcome/Echo
 dr.scores = double_robust_scores(cf_fake_echo_separate)
 tree = policy_tree(X,dr.scores)
 plot(tree)
-rm()
-# real news echo chamber
-load("~/Downloads/dse4101/Causal Forest Believability for Real News Outcome/Echo Chamber Treatment/R Data/causal_forest_real_echo_sep.RData")
-dr.scores_real = double_robust_scores(cf_real_echo_sep)
-tree_real_echo = policy_tree(X,dr.scores_real)
-plot(tree_real_echo)
-rm()
+
+rm(list=ls())
 # fake news prime
-load("~/Downloads/dse4101/Causal Forest Believability for Fake News Outcome/Prime Treatment/causal_forest_prime_sep.RData")
+load("Causal Forest Believability for Fake News Outcome/Prime Treatment/R Data/causal_forest_prime_sep.RData")
 dr.scores_fake_prime = double_robust_scores(cf_prime_separate)
 tree_fake_prime = policy_tree(X,dr.scores_fake_prime)
 plot(tree_fake_prime)
-rm()
-#real news prime
-load("~/Downloads/dse4101/Causal Forest Believability for Real News Outcome/Prime Treatment/R Data/causal_forest_real_prime_sep.RData")
-dr.scores_real_prime = double_robust_scores(cf_real_prime_sep)
-tree_real_prime = policy_tree(X,dr.scores_real_prime)
-plot(tree_real_prime)
-save.image("policy_tree.RData")
+save.image("Optimal Policy Trees/policy_tree.RData")
