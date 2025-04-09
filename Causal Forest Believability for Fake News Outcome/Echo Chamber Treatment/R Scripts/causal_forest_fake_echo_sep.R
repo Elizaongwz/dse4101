@@ -5,6 +5,7 @@ library(randomForest)
 library(dplyr)
 library(np)
 library(pracma)
+library(ggplot2)
 
 load("Datasets/Cleaning Scripts and R Data/clean.RData")
 set.seed(123)
@@ -18,8 +19,8 @@ summary(ps[df1$echofake==1])
 summary(ps[df1$echofake==0]) #good matches found
 
 # Omnibus Test for Heterogeneity
-test_calibration(cf_fake_echo_separate) #reasonably calibrated
 cf_fake_echo_separate = causal_forest(X=X,Y=df1$totalfakeavg,W=df1$echofake,W.hat=ps, seed=1234)
+test_calibration(cf_fake_echo_separate) #reasonably calibrated
 tau.hat_fake_echo_sep = predict(cf_fake_echo_separate, estimate.variance=TRUE)$predictions
 sqrt_fake_echo_sep =  predict(cf_fake_echo_separate, estimate.variance=TRUE)$variance.estimates
 #tree_fake_echo_sep <- get_tree(cf_fake_echo_separate, 5) # get a representative tree out of the forest
@@ -30,12 +31,21 @@ ATE = average_treatment_effect(cf_fake_echo_separate)
 cat("95% CI for the ATE:", round(ATE[1], 3), "+/-", round(qnorm(0.975) * ATE[2], 3), "\n")
 
 # Cumulative Gain Plot
-df1$CATE <- tau.hat_fake_echo_sep
-df1 <- df1[order(df1$CATE, decreasing = TRUE), ]
-df1$quantile <- cut(seq(1, nrow(df1)), breaks = 10, labels = FALSE)  
-gain_data <- aggregate(df1$totalfakeavg, by = list(df1$quantile), FUN = sum)
-gain_data$cum_population <- seq(1, 10) / 10 
-
+sorted_indices <- order(tau.hat_fake_echo_sep, decreasing = TRUE)
+sorted_tau <- tau.hat_fake_echo_sep[sorted_indices]
+cumulative_effect <- cumsum(sorted_tau) / seq_along(sorted_tau)
+proportion <- seq_along(sorted_tau) / length(sorted_tau)
+cumgain = data.frame(Proportion = proportion, CumulativeEffect = cumulative_effect)
+  
+ggplot(cumgain, aes(x = Proportion, y = CumulativeEffect)) +
+  geom_line(color = "blue", size = 1) +
+  geom_hline(yintercept = mean(tau.hat_fake_echo_sep), linetype = "dashed", color = "red") +
+  labs(
+    title = "Cumulative Effect",
+    x = "Proportion of Sample (Sorted by Treatment Effect)",
+    y = "Cumulative Mean Treatment Effect"
+  ) +
+  theme_minimal()
 # Plot cumulative gains chart
 ggplot(gain_data, aes(x = cum_population, y = x)) +
   geom_line(color = "black") +  # Main curve

@@ -60,6 +60,24 @@ ggplot(var_imp_df, aes(x = reorder(Variable, Importance), y = Importance)) +
   theme_minimal()
 
 # Cumulative Gain Plot
+
+# Cumulative Gain Plot
+sorted_indices <- order(tau.hat_prime_sep, decreasing = TRUE)
+sorted_tau <- tau.hat_prime_sep[sorted_indices]
+cumulative_effect <- cumsum(sorted_tau) / seq_along(sorted_tau)
+proportion <- seq_along(sorted_tau) / length(sorted_tau)
+cumgain = data.frame(Proportion = proportion, CumulativeEffect = cumulative_effect)
+
+ggplot(cumgain, aes(x = Proportion, y = CumulativeEffect)) +
+  geom_line(color = "blue", size = 1) +
+  geom_hline(yintercept = mean(tau.hat_prime_sep), linetype = "dashed", color = "red") +
+  labs(
+    title = "Cumulative Effect",
+    x = "Proportion of Sample (Sorted by Treatment Effect)",
+    y = "Cumulative Mean Treatment Effect"
+  ) +
+  theme_minimal()
+
 df2$CATE <- tau.hat_prime_sep
 df2 <- df2[order(df2$CATE, decreasing = FALSE), ]
 df2$quantile <- cut(seq(1, nrow(df2)), breaks = 10, labels = FALSE)  

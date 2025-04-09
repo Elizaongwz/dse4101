@@ -16,8 +16,6 @@ dr_prime = drgee(oformula=formula(totalfakeavg~republican+socialavg+knowscale+ag
            data=df2_avg)
 summary(dr_prime)
 
-ks_model_echo_avg = npindex(df1_avg$echofake ~ republican+socialavg+knowscale+age+effavg, data=df1_avg, method="kleinspady")
-ps_echo_avg = fitted(ks_model_echo_avg)
 dr_echo = drgee(oformula=formula(totalfakeavg~republican+socialavg+knowscale+age+effavg),
            eformula = formula(echofake~republican+socialavg+knowscale+age+effavg),
            elink="logit",
